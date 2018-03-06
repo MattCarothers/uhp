@@ -1,0 +1,21 @@
+{
+    "datefmt" : "%a, %d %b %Y %H:%M:%S GMT",
+    "fields" : {
+        "app"      : "uhp",
+        "emulated" : "nginx"
+    },
+	"states" : {
+		"_START" : [
+			{
+				"pattern" : "^(GET|POST|PUT|DELETE|HEAD|OPTIONS)\\b",
+				"output"  : "HTTP/1.1 404 Not Found\r\nServer: nginx/1.13.4\r\nDate: {date}\r\nConnection: close\r\n",
+				"next"    : "_END"
+			},
+            {
+                "pattern" : ".",
+				"output"  : "HTTP/1.1 400 Bad Request\r\nServer: nginx/1.13.4\r\nDate: {date}\r\nConnection: close\r\n",
+                "next"    : "_END"
+            }
+		]
+	}
+}

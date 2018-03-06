@@ -1,0 +1,22 @@
+{
+    "states" : {
+        "_START" : [
+            {
+                "pattern" : "^Host:",
+                "tags"    : [ "am_ignore" ]
+            },
+            {
+                "pattern" : "^CSeq:",
+                "tags"    : [ "am_ignore" ]
+            },
+            {
+                "pattern" : "^Content-Length:",
+                "tags"    : [ "am_ignore" ]
+            },
+            {
+                "pattern" : "^$",
+                "next"    : "_END"
+            }
+        ]
+    }
+}

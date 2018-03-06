@@ -1,0 +1,67 @@
+{
+    "banner" : "+OK Ready\r\n",
+    "tags"   : [ "pop3" ],
+    "states" : {
+        "_START" : [
+            {
+                "pattern" : "^PASS",
+                "output"  : "-ERR No username given.\r\n",
+		"tags"    : [ "password" ]
+            },
+	    {
+                "pattern" : "^(RETR|STAT|DELE|LIST|RSET|TOP)",
+                "output"  : "-ERR Log in first.\r\n"
+            }
+        ],
+        "user_accepted" : [
+            {
+                "pattern" : "^PASS password",
+                "output"  : "+OK 0 messages\r\n",
+		"tags"    : [ "password" ],
+                "next"    : "pass_accepted"
+            },
+            {
+                "pattern" : "^PASS",
+                "output"  : "-ERR invalid user name or password.\r\n",
+		"tags"    : [ "password" ],
+                "next"    : "_END"
+            }
+        ],
+        "pass_accepted" : [
+	    {
+                "pattern" : "^STAT",
+                "output"  : "+OK 0 0\r\n"
+            },
+	    {
+                "pattern" : "^LIST",
+                "output"  : "+OK Mailbox scan listing follows\r\n.\r\n"
+            },
+	    {
+                "pattern" : "^RSET",
+                "output"  : "+OK Reset state\r\n"
+            },
+	    {
+                "pattern" : "^(RETR|DELE|TOP)",
+                "output"  : "-ERR No such message.\r\n",
+		"tags"    : [ "password" ]
+            }
+        ],
+        "_SHARED" : [
+            {
+                "pattern" : "^USER",
+                "output"  : "+OK\r\n",
+		"tags"    : [ "username" ],
+                "next"    : "user_accepted"
+            },
+            {
+                "pattern" : "^QUIT",
+                "output"  : "+OK Logging out\r\n",
+                "next"    : "_END"
+            },
+            {
+                "pattern" : ".",
+                "output"  : "-ERR Unknown command.\r\n"
+            }
+        ]
+    }
+}

