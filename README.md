@@ -1,6 +1,16 @@
 # Universal Honey Pot
 Universal Honey Pot is a medium interaction honeypot that allows defenders to
 quickly implement line-based TCP protocols with a simple JSON configuration.
+## Why?
+Threats evolve quickly, and writing traditional honeypots is a pain.  Defenders
+start from scratch writing networking, logging, and protocol emulation code,
+and then they still have to integrate their new honeypot with existing systems.
+In practice, few new honeypots ever get written for those reasons.
+
+UHP provides all the networking and logging, and it outputs JSON or publishes
+to hpfeeds for quick integration.  It makes emulating new protocols a simple
+matter of creating some JSON, or it can even run with a generic config and
+write new skeleton emulations all by itself based on the input it receives.
 ## Usage
 ```
 usage: uhp.py [-h] [-H HOST] [-f FILE] [-a AUTO_MACHINE_DIR]
