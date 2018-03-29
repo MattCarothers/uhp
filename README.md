@@ -251,7 +251,7 @@ Session logging:
 }
 ```
 
-Session logging produces signficantly fewer events but may make it more
+Session logging produces significantly fewer events but may make it more
 difficult to cluster common strings between diverse attackers.
 
 ## Advanced Configuration
