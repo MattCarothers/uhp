@@ -34,6 +34,7 @@ import json
 import re
 import socket
 import socketserver
+import ssl
 import sys
 import threading
 import time
@@ -224,7 +225,7 @@ class ConfigGenerator():
         self.hash.update(bytes(pattern, 'utf8'))
 
     def write(self):
-	# If we didn't get any input, there's nothing to do
+    # If we didn't get any input, there's nothing to do
         if not self.state:
             return
         # Create a filename based on source ip, dest port, and the
@@ -383,6 +384,33 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
             )
             logger.warn(event)
 
+# Child class for socketserver.TCPServer to implement TLS
+# From https://stackoverflow.com/a/19803457
+class SSLTCPServer(socketserver.TCPServer):
+    def __init__(self,
+                 server_address,
+                 RequestHandlerClass,
+                 certfile,
+                 keyfile,
+                 ssl_version=ssl.PROTOCOL_TLSv1_2,
+                 bind_and_activate=True):
+        socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
+        self.certfile = certfile
+        self.keyfile  = keyfile
+        self.ssl_version = ssl_version
+
+    def get_request(self):
+        newsocket, fromaddr = self.socket.accept()
+        connstream = ssl.wrap_socket(newsocket,
+                                 server_side=True,
+                                 certfile = self.certfile,
+                                 keyfile = self.keyfile,
+                                 ssl_version = self.ssl_version)
+        return connstream, fromaddr
+
+class SSLThreadedTCPServer(socketserver.ThreadingMixIn, SSLTCPServer):
+    pass
+
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
@@ -458,7 +486,30 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--log-sessions", 
             help="log sessions as single events rather than one event per line",
             default=False, action="store_true")
+    parser.add_argument("-k", "--key-file", help="Key file for TLS")
+    parser.add_argument("-c", "--cert-file", help="Certificate file for TLS")
+    parser.add_argument("-t", "--tls-version", help="TLS version (default 1.2)",
+                        default="1.2")
     args = parser.parse_args()
+
+		# Parse TLS arguments
+    if args.tls_version == "1.2":
+        ssl_version = ssl.PROTOCOL_TLSv1_2
+    elif args.tls_version == "1.1":
+        ssl_version = ssl.PROTOCOL_TLSv1_1
+    elif args.tls_version == "1.0" or args.tls_version == "1":
+        ssl_version = ssl.PROTOCOL_TLSv1
+    elif args.tls_version == "3":
+		    # Requires an older version of openssl
+        ssl_version = ssl.PROTOCOL_SSLv3
+
+    # TLS certificate and key files
+    if args.key_file and not args.cert_file:
+                raise RuntimeError("Certificate file (-c) is required if key file is provided")
+    elif args.cert_file and not args.key_file:
+                raise RuntimeError("Key file (-k) is required if certificate file is provided")
+    elif args.cert_file and args.key_file:
+        enable_tls = True
 
     # Configure logging
     logger.setLevel(logging.DEBUG)
@@ -523,9 +574,15 @@ if __name__ == "__main__":
     # Check the config for errors
     UniversalHoneyPot.validate(config)
     
-    ThreadedTCPServer.allow_reuse_address = True
+    SSLThreadedTCPServer.allow_reuse_address = True
     for port in args.port:
-        server = ThreadedTCPServer((args.bind_host, port), ThreadedTCPRequestHandler)
+        if enable_tls:
+            server = SSLThreadedTCPServer((args.bind_host, port),
+                                    ThreadedTCPRequestHandler, args.cert_file, args.key_file,
+                                    ssl_version)
+        else:
+            server = ThreadedTCPServer((args.bind_host, port),
+                          ThreadedTCPRequestHandler)
         ip, port = server.server_address
         # Pass some configuration data to the server object
         server.config = config
