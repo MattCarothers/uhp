@@ -31,6 +31,7 @@ import hpfeeds
 import logging
 import logging.handlers
 import json
+import os
 import re
 import socket
 import socketserver
@@ -488,27 +489,52 @@ if __name__ == "__main__":
             default=False, action="store_true")
     parser.add_argument("-k", "--key-file", help="Key file for TLS")
     parser.add_argument("-c", "--cert-file", help="Certificate file for TLS")
-    parser.add_argument("-t", "--tls-version", help="TLS version (default 1.2)",
-                        default="1.2")
+    parser.add_argument("-t", "--tls-version", help="SSL/TLS version [3, 1, 1.1, 1.2, 1.3]")
     args = parser.parse_args()
 
-		# Parse TLS arguments
-    if args.tls_version == "1.2":
+    # Parse TLS arguments
+    try:
+        # Default to max version of TLS the client supports
+        # Works in Python 3.6+
+        ssl_version = ssl.PROTOCOL_TLS
+    except:
+        # Fall back for older Python
         ssl_version = ssl.PROTOCOL_TLSv1_2
-    elif args.tls_version == "1.1":
-        ssl_version = ssl.PROTOCOL_TLSv1_1
-    elif args.tls_version == "1.0" or args.tls_version == "1":
-        ssl_version = ssl.PROTOCOL_TLSv1
-    elif args.tls_version == "3":
-		    # Requires an older version of openssl
-        ssl_version = ssl.PROTOCOL_SSLv3
+
+    if args.tls_version:
+        try:
+            if args.tls_version == "1.3":
+                ssl_version = ssl.PROTOCOL_TLSv1_3
+            if args.tls_version == "1.2":
+                ssl_version = ssl.PROTOCOL_TLSv1_2
+            elif args.tls_version == "1.1":
+                ssl_version = ssl.PROTOCOL_TLSv1_1
+            elif args.tls_version == "1.0" or args.tls_version == "1":
+                ssl_version = ssl.PROTOCOL_TLSv1
+            elif args.tls_version == "3":
+                # Requires an older version of openssl
+                ssl_version = ssl.PROTOCOL_SSLv3
+            else:
+                parser.error("Unsupported TLS version: " + args.tls_version)
+        except AttributeError:
+            print("SSL/TLS v" + args.tls_version + " is not supported by this version of the ssl library.")
+            sys.exit(1)
 
     # TLS certificate and key files
     if args.key_file and not args.cert_file:
-                raise RuntimeError("Certificate file (-c) is required if key file is provided")
+        raise RuntimeError("Certificate file (-c) is required if key file is provided")
     elif args.cert_file and not args.key_file:
-                raise RuntimeError("Key file (-k) is required if certificate file is provided")
+        raise RuntimeError("Key file (-k) is required if certificate file is provided")
     elif args.cert_file and args.key_file:
+        # Check file existence / readability
+        try:
+            fh = open(args.cert_file)
+            fh.close()
+            fh = open(args.key_file)
+            fh.close()
+        except Exception as e:
+            print(e)
+            sys.exit(1)
         enable_tls = True
 
     # Configure logging
