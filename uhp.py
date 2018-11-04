@@ -521,6 +521,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     # TLS certificate and key files
+    enable_tls = False
     if args.key_file and not args.cert_file:
         raise RuntimeError("Certificate file (-c) is required if key file is provided")
     elif args.cert_file and not args.key_file:
