@@ -13,9 +13,10 @@ matter of creating some JSON, or it can even run with a generic config and
 write new skeleton emulations all by itself based on the input it receives.
 ## Usage
 ```
-usage: uhp.py [-h] [-H HOST] [-f FILE] [-a AUTO_MACHINE_DIR]
-                     [-m MAX_BYTES] [-v] [-q] [-r] [-j] [-s]
-                     config_file [port [port ...]]
+usage: uhp.py [-h] [-b BIND_HOST] [-H HPFEEDS_CONFIG] [-f FILE]
+              [-a AUTO_MACHINE_DIR] [-m MAX_BYTES] [-v] [-q] [-r] [-j] [-s]
+              [-k KEY_FILE] [-c CERT_FILE] [-t TLS_VERSION]
+              config_file port [port ...]
 
 positional arguments:
   config_file           Config file
@@ -23,7 +24,10 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -H HOST, --host HOST  bind host (defaults to 0.0.0.0)
+  -b BIND_HOST, --bind-host BIND_HOST
+                        bind host (defaults to 0.0.0.0)
+  -H HPFEEDS_CONFIG, --hpfeeds-config HPFEEDS_CONFIG
+                        config file for hpfeeds logging
   -f FILE, --file FILE  log file (JSON)
   -a AUTO_MACHINE_DIR, --auto-machine-dir AUTO_MACHINE_DIR
                         directory to write auto machine configs
@@ -35,6 +39,12 @@ optional arguments:
   -j, --json            log JSON to stdout
   -s, --log-sessions    log sessions as single events rather than one event
                         per line
+  -k KEY_FILE, --key-file KEY_FILE
+                        Key file for TLS
+  -c CERT_FILE, --cert-file CERT_FILE
+                        Certificate file for TLS
+  -t TLS_VERSION, --tls-version TLS_VERSION
+                        SSL/TLS version [3, 1, 1.1, 1.2, 1.3]
 ```
 ## Configuration
 The UHP basic configuration contains two data elements:
