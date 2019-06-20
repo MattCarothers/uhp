@@ -42,7 +42,7 @@ import time
 from datetime import datetime
 from uuid import uuid4
 
-logger = logging.getLogger('')
+logger = logging.getLogger('uhp')
 
 class UHPEvent():
     def __init__(self, src_ip, src_port, dest_ip, dest_port, action, message, tags=[], fields={}, session_id=None, signature=None):
