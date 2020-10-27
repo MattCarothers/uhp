@@ -1,0 +1,19 @@
+# YAML version of the auto config generator config
+---
+states:
+  _START:
+  # Ignore Host headers because we know they'll be different for every
+  # destination honeypot.
+  - pattern: '^Host:'
+    tags:
+    - am_ignore
+  # Ignore CSeq and Content-Length because they also vary.
+  - pattern: '^CSeq:'
+    tags:
+    - am_ignore
+  - pattern: '^Content-Length:'
+    tags:
+    - am_ignore
+  - next: _END
+    pattern: ^$
+
