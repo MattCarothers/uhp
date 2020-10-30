@@ -102,7 +102,7 @@ class UniversalHoneyPot():
             self.banner = config['banner']
         else:
             self.banner = None
-        
+
         # Set a unique ID for this session so we can track related logs
         self.session_id = str(uuid4())
 
@@ -201,6 +201,9 @@ class UniversalHoneyPot():
                     raise RuntimeError("Tags should be an array of strings")
                 if "next" in rule and rule['next'] != "_END" and rule['next'] not in states:
                     raise RuntimeError("Rule next value '%s' points to a non-existent state" % (rule['next']))
+                if "file" in rule:
+                    with open(rule['file'], 'r') as f:
+                        rule['output'] = rule.get('output', '') + f.read()
 
 class ConfigGenerator():
     """
