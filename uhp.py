@@ -162,7 +162,7 @@ class UniversalHoneyPot():
                     if "output" in rule:
                         output = rule['output']
                     else:
-                        output = None
+                        output = ""
 
                 # Do we have tags to apply?
                 tags = self.tags
