@@ -126,10 +126,10 @@ class UniversalHoneyPot():
                 # was provided.  A rule without a "next" stays in the same
                 # state but still returns output.
                 if "next" in rule:
-                    self.state = rule['next']
                     logger.debug("'{}' matched /{}/ | {} -> {}".format(
                         input_, rule['pattern'], self.state, rule['next'])
                     )
+                    self.state = rule['next']
                 else:
                     logger.debug("'{}' matched /{}/ | {} -> {}".format(
                         input_, rule['pattern'], self.state, self.state)
