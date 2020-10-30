@@ -1,0 +1,5 @@
+# YAML version of the generic listener config
+---
+states:
+  _START: []
+

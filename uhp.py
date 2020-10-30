@@ -39,6 +39,7 @@ import ssl
 import sys
 import threading
 import time
+import yaml
 from datetime import datetime
 from uuid import uuid4
 
@@ -211,6 +212,7 @@ class ConfigGenerator():
         self.hash      = hashlib.md5()
         self.config    = { 'states' : { } }
         self.directory = server.server.auto_machine_dir
+        self.yaml      = server.server.yaml
         self.src_ip    = server.src_ip
         self.src_port  = server.src_port
         self.dest_ip   = server.dest_ip
@@ -240,8 +242,12 @@ class ConfigGenerator():
         else:
             self.config['states'][str(self.state - 1)][0]['next'] = "_END"
         with open(self.directory + '/' + filename, 'w') as f:
-            f.write(json.dumps(self.config, sort_keys=True, indent=4))
-            f.write("\n")
+            if self.yaml:
+                f.write(yaml.dump(self.config, default_flow_style=False, explicit_start=True))
+                f.write("\n")
+            else:
+                f.write(json.dumps(self.config, sort_keys=True, indent=4))
+                f.write("\n")
             logger.debug("Wrote " + self.directory + '/' + filename)
 
 ###################
@@ -474,6 +480,8 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", help="log file (JSON)")
     parser.add_argument("-a", "--auto-machine-dir",
             help="directory to write auto machine configs", default=None)
+    parser.add_argument("-y", "--yaml",
+            help="write auto machine configs in YAML instead of JSON", action='store_true')
     parser.add_argument("-m", "--max-bytes", type=int,
             help="maximum bytes to log per session", default=0)
     parser.add_argument("-v", "--verbose", help="output debugging information",
@@ -596,7 +604,10 @@ if __name__ == "__main__":
 
     # Read in the config file that defines state transitions
     with open(args.config_file) as f:
-        config = json.loads(f.read())
+        if args.config_file.endswith('yml') or args.config_file.endswith('yaml'):
+            config = yaml.load(f.read())
+        else:
+            config = json.loads(f.read())
 
     # Check the config for errors
     UniversalHoneyPot.validate(config)
@@ -616,6 +627,7 @@ if __name__ == "__main__":
         server.log_replies  = args.log_replies
         server.log_sessions = args.log_sessions
         server.auto_machine_dir = args.auto_machine_dir
+        server.yaml = args.yaml
         server.max_bytes = args.max_bytes
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
