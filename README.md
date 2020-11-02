@@ -14,8 +14,8 @@ write new skeleton emulations all by itself based on the input it receives.
 ## Usage
 ```
 usage: uhp.py [-h] [-b BIND_HOST] [-H HPFEEDS_CONFIG] [-f FILE]
-              [-a AUTO_MACHINE_DIR] [-m MAX_BYTES] [-v] [-q] [-r] [-j] [-s]
-              [-k KEY_FILE] [-c CERT_FILE] [-t TLS_VERSION]
+              [-a AUTO_MACHINE_DIR] [-y] [-m MAX_BYTES] [-v] [-q] [-r] [-j]
+              [-s] [-k KEY_FILE] [-c CERT_FILE] [-t TLS_VERSION]
               config_file port [port ...]
 
 positional arguments:
@@ -31,6 +31,7 @@ optional arguments:
   -f FILE, --file FILE  log file (JSON)
   -a AUTO_MACHINE_DIR, --auto-machine-dir AUTO_MACHINE_DIR
                         directory to write auto machine configs
+  -y, --yaml            write auto machine configs in YAML instead of JSON
   -m MAX_BYTES, --max-bytes MAX_BYTES
                         maximum bytes to log per session
   -v, --verbose         output debugging information
