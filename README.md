@@ -275,35 +275,35 @@ specific rule.  Example:
         "app"      : "uhp",
         "emulated" : "nginx"
     },
-	"states" : {
-		"_START" : [
-			{
-				"pattern" : "^(GET|POST|PUT|DELETE|HEAD|OPTIONS)( .*)",
+    "states" : {
+        "_START" : [
+            {
+                "pattern" : "^(GET|POST|PUT|DELETE|HEAD|OPTIONS)( .*)",
                 "fields"  : {
                     "uri"  : "{match[0]}{match[1]}"
                 },
-				"next"    : "valid_command"
-			},
+                "next"    : "valid_command"
+            },
             {
                 "pattern" : ".",
-				"output"  : "HTTP/1.1 400 Bad Request\r\nServer: nginx/1.13.4\r\nDate: {date}\r\nConnection: close\r\n",
+                "output"  : "HTTP/1.1 400 Bad Request\r\nServer: nginx/1.13.4\r\nDate: {date}\r\nConnection: close\r\n",
                 "next"    : "_END"
             }
-		],
+        ],
         "valid_command" : [
-			{
-				"pattern" : "^User-Agent: ?(.*)",
+            {
+                "pattern" : "^User-Agent: ?(.*)",
                 "fields"  : {
                     "ua"  : "{match[0]}"
                 }
-			},
+            },
             {
                 "pattern" : "^$",
-				"output"  : "HTTP/1.1 404 Not Found\r\nServer: nginx/1.13.4\r\nDate: {date}\r\nConnection: close\r\n",
+                "output"  : "HTTP/1.1 404 Not Found\r\nServer: nginx/1.13.4\r\nDate: {date}\r\nConnection: close\r\n",
                 "next"    : "_END"
             }
         ]
-	}
+    }
 }
 ```
 Note that fields persist per session, so a field you set in one state will
