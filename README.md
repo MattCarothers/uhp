@@ -72,11 +72,12 @@ There are three special states:
 ## Example Configuration
 This diagram shows an example configuration for a simple POP3 honeypot.  When a
 client connects, UHP issues a banner of "+OK Ready" to the client and moves
-into its initial state.  In the initial state, any text other than "USER ..."
-from the client causes UHP to send back "-ERR No username given" and remain in
-the initial state.  If the client sends "USER ...", UHP replies back with "+OK"
-and moves into a new state in which the username has been accepted.  In this
-new state, UHP responds to a "PASS ..." command with an invalid password error.
+into its initial state.  If the client sends a "PASS ..." command in this
+initial state without first sending a username, UHP responds back with "-ERR No
+username given" and remains in the initial state.  If the client sends "USER
+...", UHP replies back with "+OK" and moves into a new state in which the
+username has been accepted.  In this new state, UHP responds to a "PASS ..."
+command with an invalid password error.
 
 ![POP3 State Diagram](https://mattcarothers.github.io/uhp/pop3-example.png)
 
@@ -117,6 +118,9 @@ This is the corresponding JSON configuration file:
     }
 }
 ```
+
+See [configs/pop3.yml](pop3.yml) for a more fully-featured POP3 honeypot.
+
 Additional elements (see Dynamic Output and Advanced Configuration below):
 * match_case - (rule) This flag makes the regex match case sensitive.
 * tags - (rule/global) An array of tags to add to the log
