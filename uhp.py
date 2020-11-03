@@ -608,7 +608,7 @@ if __name__ == "__main__":
     # Read in the config file that defines state transitions
     with open(args.config_file) as f:
         if args.config_file.endswith('yml') or args.config_file.endswith('yaml'):
-            config = yaml.load(f.read())
+            config = yaml.safe_load(f.read())
         else:
             config = json.loads(f.read())
 
