@@ -1,0 +1,53 @@
+---
+# Send a banner to each client when it connnects
+banner: "+OK Ready\r\n"
+states:
+  ##################################
+  # Initial state for the honeypot #
+  ##################################
+  _START:
+  # If we get a PASS command before USER, output an error
+  - pattern: ^PASS
+    output: "-ERR No username given.\r\n"
+  # If we get any other POP3 command before USER, output a different error
+  - pattern: ^(RETR|STAT|DELE|LIST|RSET|TOP)
+    output: "-ERR Log in first.\r\n"
+  # If the client sends a USER command, move into the user_accepted state
+  - pattern: ^USER
+    output: "+OK\r\n"
+    next: user_accepted
+  ########################################################################
+  # User accepted state.  In this state, we have received a USER command #
+  ########################################################################
+  user_accepted:
+  # Accept the password "password"
+  - pattern: ^PASS password
+    next: pass_accepted
+    output: "+OK 0 messages\r\n"
+  # Reject any other password and disconnect
+  - pattern: ^PASS
+    output: "-ERR invalid user name or password.\r\n"
+    next: _END
+  #########################################################
+  # Password accepted state.  The client has "logged in." #
+  #########################################################
+  pass_accepted:
+  - pattern: ^STAT
+    output: "+OK 0 0\r\n"
+  - pattern: ^LIST
+    output: "+OK Mailbox scan listing follows\r\n.\r\n"
+  - pattern: ^RSET
+    output: "+OK Reset state\r\n"
+  - pattern: ^(RETR|DELE|TOP)
+    output: "-ERR No such message.\r\n"
+  ###############################################################
+  # Shared state.  Patterns in this stanza match in all states. #
+  ###############################################################
+  _SHARED:
+  # If the client sends a QUIT command, disconnect
+  - pattern: ^QUIT
+    output: "+OK Logging out\r\n"
+    next: _END
+  # Send back an unknown command error for any other text we receive
+  - pattern: .
+    output: "-ERR Unknown command.\r\n"

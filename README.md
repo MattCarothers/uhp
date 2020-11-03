@@ -1,6 +1,7 @@
 # Universal Honey Pot
 Universal Honey Pot is a medium interaction honeypot that allows defenders to
-quickly implement line-based TCP protocols with a simple JSON configuration.
+quickly implement line-based TCP protocols with a simple JSON or YAML
+configuration.
 ## Why?
 Threats evolve quickly, and writing traditional honeypots is a pain.  Defenders
 start from scratch writing networking, logging, and protocol emulation code,
@@ -9,8 +10,8 @@ In practice, few new honeypots ever get written for those reasons.
 
 UHP provides all the networking and logging, and it outputs JSON or publishes
 to hpfeeds for quick integration.  It makes emulating new protocols a simple
-matter of creating some JSON, or it can even run with a generic config and
-write new skeleton emulations all by itself based on the input it receives.
+matter of creating some JSON or YAML, or it can even run with a generic config
+and write new skeleton emulations all by itself based on the input it receives.
 ## Usage
 ```
 usage: uhp.py [-h] [-b BIND_HOST] [-H HPFEEDS_CONFIG] [-f FILE]
@@ -69,7 +70,18 @@ There are three special states:
          connection.
          
 ## Example Configuration
-This JSON implements a POP3 honeypot:
+This diagram shows an example configuration for a simple POP3 honeypot.  When a
+client connects, UHP issues a banner of "+OK Ready" to the client and moves
+into its initial state.  If the client sends a "PASS ..." command in this
+initial state without first sending a username, UHP responds back with "-ERR No
+username given" and remains in the initial state.  If the client sends "USER
+...", UHP replies back with "+OK" and moves into a new state in which the
+username has been accepted.  In this new state, UHP responds to a "PASS ..."
+command with an invalid password error.
+
+![POP3 State Diagram](https://mattcarothers.github.io/uhp/pop3-example.png)
+
+This is the corresponding JSON configuration file:
 ```
 {
     "banner" : "+OK Ready\r\n",
@@ -106,6 +118,9 @@ This JSON implements a POP3 honeypot:
     }
 }
 ```
+
+See [configs/pop3.yml](configs/pop3.yml) for a more fully-featured POP3 honeypot.
+
 Additional elements (see Dynamic Output and Advanced Configuration below):
 * match_case - (rule) This flag makes the regex match case sensitive.
 * tags - (rule/global) An array of tags to add to the log
