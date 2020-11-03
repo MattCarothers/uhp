@@ -119,7 +119,7 @@ This is the corresponding JSON configuration file:
 }
 ```
 
-See [configs/pop3.yml](pop3.yml) for a more fully-featured POP3 honeypot.
+See [configs/pop3.yml](configs/pop3.yml) for a more fully-featured POP3 honeypot.
 
 Additional elements (see Dynamic Output and Advanced Configuration below):
 * match_case - (rule) This flag makes the regex match case sensitive.
