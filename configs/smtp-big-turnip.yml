@@ -1,0 +1,36 @@
+# Inspired by https://github.com/norwayfinland/Big-Turnip
+# 
+# Let's pretend to be an SMTP server, but we'll reply back to the DATA command
+# with the contents of /dev/urandom.
+---
+banner: "220 localhost.localdomain ESMTP server ready\r\n"
+states:
+  _SHARED:
+  - next: _END
+    pattern: ^QUIT
+    output: "221 localhost.localdomain 2.0.0 closing connection\r\n"
+  - pattern: .
+    output: "502 5.5.1 Unrecognized command.\r\n"
+  _START:
+  - pattern: ^(HE|EH)LO (?P<hostname>\S+)
+    output: "250 localhost.localdomain pleased to meet you, {hostname}\r\n"
+    next: helo_accepted
+  - pattern: ^HELO\s*$
+    output: "501 HELO requires valid address\r\n"
+  - pattern: .+
+    output: "503 5.5.1 EHLO/HELO first.\r\n"
+  helo_accepted:
+  - pattern: ^MAIL FROM:.*
+    output: "250 2.1.0 OK\r\n"
+    next: mail_from_accepted
+  - pattern: ^RCPT TO:.*
+    output: "503 5.5.1 bad sequence of commands\r\n"
+  mail_from_accepted:
+  - pattern: ^RCPT TO:(\S*)
+    output: "250 2.1.5 OK\r\n"
+    next: rcpt_to_accepted
+  rcpt_to_accepted:
+  - pattern: ^RCPT TO:(\S*)
+    output: "250 2.1.5 OK\r\n"
+  - pattern: ^DATA
+    live_file: /dev/urandom

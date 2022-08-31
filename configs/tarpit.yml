@@ -1,0 +1,5 @@
+---
+states:
+  _START:
+  - pattern: .*
+    live_file: /dev/urandom
