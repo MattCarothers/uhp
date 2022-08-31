@@ -16,14 +16,14 @@ and write new skeleton emulations all by itself based on the input it receives.
 ```
 usage: uhp.py [-h] [-b BIND_HOST] [-H HPFEEDS_CONFIG] [-f FILE]
               [-a AUTO_MACHINE_DIR] [-y] [-m MAX_BYTES] [-v] [-q] [-r] [-j]
-              [-s] [-k KEY_FILE] [-c CERT_FILE] [-t TLS_VERSION]
+              [-s] [-k KEY_FILE] [-c CERT_FILE] [-t TLS_VERSION] [-T TARPIT]
               config_file port [port ...]
 
 positional arguments:
   config_file           Config file
   port                  bind port
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -b BIND_HOST, --bind-host BIND_HOST
                         bind host (defaults to 0.0.0.0)
@@ -47,6 +47,9 @@ optional arguments:
                         Certificate file for TLS
   -t TLS_VERSION, --tls-version TLS_VERSION
                         SSL/TLS version [3, 1, 1.1, 1.2, 1.3]
+  -T TARPIT, --tarpit TARPIT
+                        specify a rate limit as <bytes>:<second> to limit the
+                        speed of data returned to clients
 ```
 ## Configuration
 The UHP basic configuration contains two data elements:
@@ -122,6 +125,8 @@ This is the corresponding JSON configuration file:
 See [configs/pop3.yml](configs/pop3.yml) for a more fully-featured POP3 honeypot.
 
 Additional elements (see Dynamic Output and Advanced Configuration below):
+* file - (rule) Used in place of "output."  Returns the contents of a file to the client.  The file will be loaded into memory once when UHP starts.
+* live_file - (rule) Used in place of "output."  Returns the contents of a file to the client.  The file will be opened fresh for each connection and relayed to the client as it is read.  The file contents will not be stored in memory.
 * match_case - (rule) This flag makes the regex match case sensitive.
 * tags - (rule/global) An array of tags to add to the log
 * fields - (rule/global) A dictionary of keys and values to add to the log
@@ -175,6 +180,23 @@ Examples:
     }
 }
 ```
+## Tarpitting
+UHP 1.2 introduces the `-T <bytes>:<seconds>` flag, which limts the speed of output to `<bytes>` bytes every `<seconds>` seconds.  Combine it with the `live_file` directive to keep clients connected for lengthy periods of time.
+
+Example config:
+```
+---
+states:
+  _START:
+  - pattern: .*
+    live_file: /dev/urandom
+```
+
+Example command:
+```
+# ./uhp.py -T 1:1 configs/tarpit.yml 80
+```
+
 ## Session Logging
 By default, UHP logs every line of input separately.  If you wish to log
 the client's entire input as a single event, use the -s flag.

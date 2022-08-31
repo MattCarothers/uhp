@@ -28,6 +28,7 @@ import configparser
 import copy
 import hashlib
 import hpfeeds
+import io
 import logging
 import logging.handlers
 import json
@@ -161,6 +162,8 @@ class UniversalHoneyPot():
                 except:
                     if "output" in rule:
                         output = rule['output']
+                    elif "live_file" in rule:
+                        output = open(rule['live_file'], 'rb')
                     else:
                         output = ""
 
@@ -258,6 +261,37 @@ class ConfigGenerator():
 ###################
 
 class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
+    def write_to_client(self, string_or_filehandle, tags=[], fields={}):
+        """
+        @summary: write a string or the contents of a file handle back to the
+                  client use tarpitting to slow the output down if using -T
+        """
+        log_entry = string_or_filehandle
+        if isinstance(string_or_filehandle, io.BufferedReader):
+            fh = string_or_filehandle
+            log_entry = "contents of " + fh.name
+        else:
+            fh = io.BytesIO(bytes(string_or_filehandle, 'utf8'))
+
+        data = fh.read(self.server.tarpit_bytes)
+        try:
+            while data:
+                self.wfile.write(data)
+                data = fh.read(self.server.tarpit_bytes)
+                time.sleep(self.server.tarpit_seconds)
+        # Bail out gracefully if the client disconnects
+        except BrokenPipeError:
+            pass
+
+        fh.close()
+
+        if self.server.log_replies:
+            if log_entry:
+                self.log("send", log_entry.rstrip(), tags, fields)
+            else:
+                self.log("noop", output, tags, fields)
+
+
     def handle(self):
         """
         @summary: Handle a TCP connection.  Read from the client until
@@ -276,25 +310,23 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
         self.session_send = ""
         self.session_recv = ""
         # Initialize the state machine
-        machine = UniversalHoneyPot(self.server.config)
-        self.log("connect", machine=machine)
+        self.machine = UniversalHoneyPot(self.server.config)
+        self.log("connect")
 
         # Initialize the auto machine generator if needed
         if self.server.auto_machine_dir:
             config_generator = ConfigGenerator(self)
 
         # Write out the banner if there is one
-        if machine.banner:
+        if self.machine.banner:
             # Set up the date so we can output it in the banner if needed
             dt = datetime.utcnow()
             if "datefmt" in self.server.config:
                 date = dt.strftime(self.server.config['datefmt'])
             else:
                 date = str(dt)
-            banner = machine.banner.format(**{ 'date' : date })
-            self.wfile.write(bytes(banner, 'utf8'))
-            if self.server.log_replies:
-                self.log("send", banner, machine=machine)
+            banner = self.machine.banner.format(**{ 'date' : date })
+            self.write_to_client(banner, self.machine.tags, self.machine.fields)
 
         # Keep track of bytes received so we can truncate if -m is set
         bytes_remaining = self.server.max_bytes
@@ -313,52 +345,49 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
                 if server.max_bytes:
                     if len(line) > bytes_remaining:
                         line = line[0:bytes_remaining]
-                        machine.truncated = True
-                    # Subtract this line's bytes from the amount remaining. If it's
-                    # <= 0, we'll terminate the session after running the machine.
+                        self.machine.truncated = True
+                    # Subtract this line's bytes from the amount remaining. If
+                    # it's <= 0, we'll terminate the session after running the
+                    # machine.
                     bytes_remaining = bytes_remaining - len(line)
                 
-                # Run the machine on the input, and return the output to the client
-                output, tags, fields = machine.run(line.rstrip())
-                self.log("recv", line, tags, fields, machine=machine)
+                # Run the machine on the input, and return the output to the
+                # client
+                output, tags, fields = self.machine.run(line.rstrip())
+                self.log("recv", line, tags, fields)
                 # Did the machine produce output to send back to the client?
-                if output:
-                    self.wfile.write(bytes(output, 'utf8'))
-
-                # Are we configured to log the replies we send back to clients?
-                if self.server.log_replies:
-                    if output:
-                        self.log("send", output.rstrip(), tags, fields, machine=machine)
-                    else:
-                        self.log("noop", output, tags, fields, machine=machine) 
+                # Is it a file handle?
+                self.write_to_client(output, tags, fields)
 
                 # Advance the config generator if needed
                 if self.server.auto_machine_dir and "am_ignore" not in tags:
                     config_generator.advance(line.rstrip())
 
-                # End the session if max_bytes is set and we've exceeded the limit
+                # End the session if max_bytes is set and we've exceeded the
+                # limit
                 if self.server.max_bytes and bytes_remaining <= 0:
                     break
 
                 # Machine state _END means we're done
-                if machine.state == "_END":
+                if self.machine.state == "_END":
                     break
-        except:
+        except Exception as e:
+            print(repr(e))
             pass
 
         # Clean up by logging the disconnect and writing out our new auto config
         if self.server.auto_machine_dir:
             config_generator.write()
-            machine.signature = config_generator.hash.hexdigest()
-        self.log("disconnect", machine=machine)
+            self.machine.signature = config_generator.hash.hexdigest()
+        self.log("disconnect")
 
-    def log(self, action, message="", tags=[], fields={}, session_id=None, machine=None):
+    def log(self, action, message="", tags=[], fields={}, session_id=None):
         """
         @summary: log output
         """
-        tags       = tags or machine.tags
-        fields     = fields or machine.fields
-        session_id = session_id or machine.session_id
+        tags       = tags or self.machine.tags
+        fields     = fields or self.machine.fields
+        session_id = session_id or self.machine.session_id
         # Are we configured to log entire sessions in one event?
         # If so, store sends and receives for later, and emit a
         # log on disconnect.
@@ -372,9 +401,9 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
                     self.src_ip, self.src_port,
                     self.dest_ip, self.dest_port,
                     "recv", self.session_recv, tags,
-                    fields, session_id, machine.signature
+                    fields, session_id, self.machine.signature
                 )
-                logger.warn(event)
+                logger.warning(event)
                 # Send a second event for the transmitted data if configured
                 # to do so.
                 if self.server.log_replies:
@@ -382,17 +411,17 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
                         self.src_ip, self.src_port,
                         self.dest_ip, self.dest_port,
                         "send", self.session_send, tags,
-                        fields, session_id, machine.signature
+                        fields, session_id, self.machine.signature
                     )
-                    logger.warn(event)
+                    logger.warning(event)
         else:
             event = UHPEvent(
                 self.src_ip, self.src_port,
                 self.dest_ip, self.dest_port,
                 action, message.rstrip(), tags,
-                fields, session_id, machine.signature
+                fields, session_id, self.machine.signature
             )
-            logger.warn(event)
+            logger.warning(event)
 
 # Child class for socketserver.TCPServer to implement TLS
 # From https://stackoverflow.com/a/19803457
@@ -472,6 +501,12 @@ class HPFeedsHandler(logging.Handler):
         self.publisher.publish(self.channel, msg)
         logger.debug("HPF: sent" + msg)
 
+# Make sure the tarpit command line argument looks like <digits>:<digits>
+def validate_tarpit_argument(argument):
+    if not re.match(r'^\d+:\d+$', argument):
+        raise argparse.ArgumentTypeError("tarpit argument must be <bytes>:<seconds>")
+    return argument
+
 if __name__ == "__main__":
     # Parse the command line arguments
     parser = argparse.ArgumentParser()
@@ -501,6 +536,9 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--key-file", help="Key file for TLS")
     parser.add_argument("-c", "--cert-file", help="Certificate file for TLS")
     parser.add_argument("-t", "--tls-version", help="SSL/TLS version [3, 1, 1.1, 1.2, 1.3]")
+    parser.add_argument("-T", "--tarpit", type=validate_tarpit_argument,
+            help="specify a rate limit as <bytes>:<second> to limit the speed of data returned to clients")
+
     args = parser.parse_args()
 
     # Parse TLS arguments
@@ -615,6 +653,16 @@ if __name__ == "__main__":
     # Check the config for errors
     UniversalHoneyPot.validate(config)
     
+    # Parse the tarpit argument
+    if args.tarpit:
+        tarpit_bytes, tarpit_seconds = args.tarpit.split(':')
+    else:
+        # If no tarpit values are specified, this just becomes the number of
+        # bytes for each read() call of the output string or file that we
+        # return to a client
+        tarpit_bytes = 1024
+        tarpit_seconds = 0
+
     SSLThreadedTCPServer.allow_reuse_address = True
     for port in args.port:
         if enable_tls:
@@ -632,6 +680,9 @@ if __name__ == "__main__":
         server.auto_machine_dir = args.auto_machine_dir
         server.yaml = args.yaml
         server.max_bytes = args.max_bytes
+        server.tarpit_bytes = int(tarpit_bytes)
+        server.tarpit_seconds = int(tarpit_seconds)
+
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         logger.info("Listening on {}:{}".format(ip, port))
