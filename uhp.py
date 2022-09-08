@@ -304,6 +304,9 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
             self.dest_ip, self.dest_port = self.connection.getsockname()
         except:
             return
+        # Track how long each session lasts
+        self.start_time = time.time()
+
         # Intialize two variables to hold all the text send and received.
         # We'll used this if server.config.log_sessions is true and we're
         # logging entire sessions instead of individual lines.
@@ -379,7 +382,8 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
         if self.server.auto_machine_dir:
             config_generator.write()
             self.machine.signature = config_generator.hash.hexdigest()
-        self.log("disconnect")
+        duration = time.time() - self.start_time
+        self.log("disconnect", "session lasted %0.2f seconds" % duration)
 
     def log(self, action, message="", tags=[], fields={}, session_id=None):
         """
@@ -397,6 +401,7 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
             elif action == "recv":
                 self.session_recv = self.session_recv + message
             elif action == "disconnect":
+                fields['duration'] = time.time() - self.start_time
                 event = UHPEvent(
                     self.src_ip, self.src_port,
                     self.dest_ip, self.dest_port,
