@@ -420,6 +420,8 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
                     )
                     logger.warning(event)
         else:
+            if action == "disconnect":
+                fields['duration'] = time.time() - self.start_time
             event = UHPEvent(
                 self.src_ip, self.src_port,
                 self.dest_ip, self.dest_port,
