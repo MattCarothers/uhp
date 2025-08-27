@@ -186,7 +186,7 @@ class UniversalHoneyPot():
         # No rules matched
         logger.debug("'{}' did not match any patterns | {} -> {}".format(
             input_, self.state, self.state))
-        return(None, self.tags, self.fields)
+        return("", self.tags, self.fields)
 
     @staticmethod
     def validate(config):
