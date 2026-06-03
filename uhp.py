@@ -41,7 +41,7 @@ import sys
 import threading
 import time
 import yaml
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 logger = logging.getLogger('uhp')
@@ -136,7 +136,7 @@ class UniversalHoneyPot():
                         input_, rule['pattern'], self.state, self.state)
                     )
                 # Add a {date} key for output
-                dt = datetime.utcnow()
+                dt = datetime.now(timezone.utc).replace(tzinfo=None)
                 output_fields = {}
                 if "datefmt" in rule:
                     date = dt.strftime(rule['datefmt'])
@@ -289,7 +289,7 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
             if log_entry:
                 self.log("send", log_entry.rstrip(), tags, fields)
             else:
-                self.log("noop", output, tags, fields)
+                self.log("noop", "", tags, fields)
 
 
     def handle(self):
@@ -323,7 +323,7 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
         # Write out the banner if there is one
         if self.machine.banner:
             # Set up the date so we can output it in the banner if needed
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc).replace(tzinfo=None)
             if "datefmt" in self.server.config:
                 date = dt.strftime(self.server.config['datefmt'])
             else:
@@ -345,7 +345,7 @@ class ThreadedTCPRequestHandler(socketserver.StreamRequestHandler):
                     continue
 
                 # Check to see if we've exceeded max bytes, and truncate if so
-                if server.max_bytes:
+                if self.server.max_bytes:
                     if len(line) > bytes_remaining:
                         line = line[0:bytes_remaining]
                         self.machine.truncated = True
@@ -436,22 +436,16 @@ class SSLTCPServer(socketserver.TCPServer):
     def __init__(self,
                  server_address,
                  RequestHandlerClass,
-                 certfile,
-                 keyfile,
-                 ssl_version=ssl.PROTOCOL_TLSv1_2,
+                 ssl_context,
                  bind_and_activate=True):
         socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
-        self.certfile = certfile
-        self.keyfile  = keyfile
-        self.ssl_version = ssl_version
+        self.ssl_context = ssl_context
 
     def get_request(self):
         newsocket, fromaddr = self.socket.accept()
-        connstream = ssl.wrap_socket(newsocket,
-                                 server_side=True,
-                                 certfile = self.certfile,
-                                 keyfile = self.keyfile,
-                                 ssl_version = self.ssl_version)
+        # ssl.wrap_socket() was removed in Python 3.12, so wrap via the
+        # SSLContext.wrap_socket() method, which is available from 3.6 onward.
+        connstream = self.ssl_context.wrap_socket(newsocket, server_side=True)
         return connstream, fromaddr
 
 class SSLThreadedTCPServer(socketserver.ThreadingMixIn, SSLTCPServer):
@@ -548,34 +542,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Parse TLS arguments
-    try:
-        # Default to max version of TLS the client supports
-        # Works in Python 3.6+
-        ssl_version = ssl.PROTOCOL_TLS
-    except:
-        # Fall back for older Python
-        ssl_version = ssl.PROTOCOL_TLSv1_2
-
-    if args.tls_version:
-        try:
-            if args.tls_version == "1.3":
-                ssl_version = ssl.PROTOCOL_TLSv1_3
-            if args.tls_version == "1.2":
-                ssl_version = ssl.PROTOCOL_TLSv1_2
-            elif args.tls_version == "1.1":
-                ssl_version = ssl.PROTOCOL_TLSv1_1
-            elif args.tls_version == "1.0" or args.tls_version == "1":
-                ssl_version = ssl.PROTOCOL_TLSv1
-            elif args.tls_version == "3":
-                # Requires an older version of openssl
-                ssl_version = ssl.PROTOCOL_SSLv3
-            else:
-                parser.error("Unsupported TLS version: " + args.tls_version)
-        except AttributeError:
-            print("SSL/TLS v" + args.tls_version + " is not supported by this version of the ssl library.")
-            sys.exit(1)
-
     # TLS certificate and key files
     enable_tls = False
     if args.key_file and not args.cert_file:
@@ -593,6 +559,35 @@ if __name__ == "__main__":
             print(e)
             sys.exit(1)
         enable_tls = True
+
+    # Build the TLS context.  ssl.wrap_socket() and the standalone
+    # PROTOCOL_TLSv1* constants are deprecated/removed in modern Python, so we
+    # use an SSLContext.  PROTOCOL_TLS_SERVER is available from Python 3.6 on.
+    ssl_context = None
+    if enable_tls:
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(certfile=args.cert_file, keyfile=args.key_file)
+
+        # Pin a specific TLS version if requested.  Setting min == max version
+        # via ssl.TLSVersion requires Python 3.7+; on 3.6 we fall back to the
+        # library's negotiated default.
+        if args.tls_version:
+            if hasattr(ssl, "TLSVersion"):
+                version_map = {
+                    "1.3": ssl.TLSVersion.TLSv1_3,
+                    "1.2": ssl.TLSVersion.TLSv1_2,
+                    "1.1": ssl.TLSVersion.TLSv1_1,
+                    "1.0": ssl.TLSVersion.TLSv1,
+                    "1":   ssl.TLSVersion.TLSv1,
+                }
+                tls_version = version_map.get(args.tls_version)
+                if tls_version is None:
+                    parser.error("Unsupported TLS version: " + args.tls_version)
+                ssl_context.minimum_version = tls_version
+                ssl_context.maximum_version = tls_version
+            else:
+                print("Pinning a specific TLS version requires Python 3.7+; "
+                      "using the library default instead.")
 
     # Configure logging
     logger.setLevel(logging.DEBUG)
@@ -674,8 +669,7 @@ if __name__ == "__main__":
     for port in args.port:
         if enable_tls:
             server = SSLThreadedTCPServer((args.bind_host, port),
-                                    ThreadedTCPRequestHandler, args.cert_file, args.key_file,
-                                    ssl_version)
+                                    ThreadedTCPRequestHandler, ssl_context)
         else:
             server = ThreadedTCPServer((args.bind_host, port),
                           ThreadedTCPRequestHandler)
