@@ -284,7 +284,10 @@ class HPC_SSL(HPC):
 
 	def makesocket(self, addr_family):
 		s = socket.socket(addr_family, socket.SOCK_STREAM)
-		return ssl.wrap_socket(s, ca_certs=self.certfile, ssl_version=3, cert_reqs=2)
+		# ssl.wrap_socket() was removed in Python 3.12; use an SSLContext that
+		# verifies the broker against the supplied CA bundle (CERT_REQUIRED).
+		context = ssl.create_default_context(cafile=self.certfile)
+		return context.wrap_socket(s, server_hostname=self.host)
 
 
 def new(host=None, port=10000, ident=None, secret=None, timeout=3, reconnect=True, sleepwait=20, certfile=None):

@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:26.04
 
 # You may want to change the uhp user id inside the container if
 # you're going to mount an external log directory.  The internal uid
@@ -11,8 +11,10 @@ FROM ubuntu:16.04
 # ... and make sure /var/log/uhp is writable by the uhp uid inside the container.
 ARG FOG_UID=903
 
-# Install packages
-RUN apt-get update && apt-get install -y git supervisor python3 authbind
+# Install packages.  python3-yaml comes from apt rather than pip because
+# Ubuntu 26.04 ships Python 3.14 with PEP 668 (externally-managed-environment),
+# which blocks system-wide pip installs.
+RUN apt-get update && apt-get install -y supervisor python3 python3-yaml authbind
 
 # What ports should we listen on, and what templates should we run?
 ARG LISTENERS=generic-listener:80
